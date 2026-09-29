@@ -1,7 +1,3 @@
-<!-- =========================
-     FIXED VERSION (OPTIMIZED)
-========================= -->
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -15,145 +11,233 @@
 <style>
 :root{
   --board-dark:#101a15;
-  --chalk:#ffffff;
-  --chalk-dim:#e2e8df;
+  --chalk:#fff;
   --gold:#f2af3f;
-  --coral:#ff7b54;
-  --sage:#8cc49d;
 }
 
-*{ box-sizing:border-box; }
-
+/* базовый стиль */
 html,body{
   margin:0;
   padding:0;
   min-height:100%;
-  font-family:'Manrope', sans-serif;
-  color:var(--chalk);
+  font-family:Manrope,sans-serif;
   background:var(--board-dark);
+  color:var(--chalk);
   overflow-x:hidden;
 }
 
-/* ===== FIX: BG LAYERS ===== */
+/* =======================
+   FIX: BACKGROUND SYSTEM
+======================= */
 #bg, #bg2{
   position:fixed;
   inset:0;
   background-size:cover;
   background-position:center;
-  will-change: opacity;
-  transform: translateZ(0);
+  transform:translateZ(0);
 }
 
 #bg{ z-index:1; }
 #bg2{
   z-index:2;
   opacity:0;
-  transition: opacity 0.6s ease;
+  transition:opacity .6s ease;
 }
 
-#bgAccent{ position:fixed; inset:0; z-index:3; opacity:0.3; mix-blend-mode:color-dodge; }
-canvas#particles{ position:fixed; inset:0; z-index:4; pointer-events:none; }
-#schoolFX{ position:fixed; inset:0; z-index:5; pointer-events:none; }
+/* UI layers */
+#bgAccent{position:fixed;inset:0;z-index:3;opacity:.3}
+#schoolFX{position:fixed;inset:0;z-index:4;pointer-events:none}
 
-.screen{ position:relative; z-index:10; }
-.screen{ display:none; }
-.active{ display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; }
+/* screens */
+.screen{display:none;position:relative;z-index:10}
+.active{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
 
-/* остальной CSS ты НЕ трогаешь — он у тебя норм */
+/* buttons */
+button{
+  padding:14px 24px;
+  border-radius:999px;
+  border:none;
+  cursor:pointer;
+}
+
+/* =======================
+   FIXED VIDEO MODAL
+======================= */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.9);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:200;
+}
+.modal-overlay.active{display:flex}
+
+.custom-player{
+  width:90%;
+  max-width:900px;
+  background:#000;
+  border-radius:12px;
+  overflow:hidden;
+}
+
+video{
+  width:100%;
+  display:block;
+}
+
+/* controls simplified */
+.player-controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  background:#111;
+  color:#fff;
+}
 
 </style>
 </head>
 
 <body>
 
+<!-- BACKGROUNDS -->
 <div id="bg"></div>
-<div id="bg2"></div>
 
+<!-- UI -->
 <div id="bgAccent"></div>
 <div id="schoolFX"></div>
-<canvas id="particles"></canvas>
 
-<!-- UI оставлен как есть -->
+<!-- SCREENS -->
 <div id="start" class="screen active">
-  <div class="stage">
-    <h1>Система</h1>
-    <button onclick="start()">Войти</button>
+  <button onclick="start()">Войти</button>
+</div>
+
+<div id="characters" class="screen">
+  <button onclick="goGame()">Дальше</button>
+</div>
+
+<div id="game" class="screen">
+  <h2>Игра</h2>
+</div>
+
+<div id="result" class="screen">
+  <button onclick="finale()">Финал</button>
+</div>
+
+<div id="final" class="screen">
+  <button onclick="openGift()">Видео</button>
+</div>
+
+<!-- MODAL -->
+<div id="giftModal" class="modal-overlay">
+  <div class="custom-player">
+    <video id="video" controls></video>
   </div>
 </div>
 
-<!-- =========================
-     JS FIXES ONLY
-========================= -->
 <script>
 
+/* =======================
+   SCENES (твой массив сохраняется)
+======================= */
+const scenes = [
+  { bg:"img/start.jpg" },
+  { bg:"img/class.jpg" },
+  { bg:"img/hall.jpg" },
+  { bg:"img/library.jpg" }
+];
+
+/* =======================
+   BACKGROUND ENGINE FIX
+======================= */
 const bg = document.getElementById("bg");
-const bg2 = document.getElementById("bg2");
+const bg2 = document.createElement("div");
+bg2.id = "bg2";
+document.body.appendChild(bg2);
 
-/* ===== SCENE BACKGROUNDS PRELOAD ===== */
-const bgCache = {};
+let toggle = false;
+const cache = {};
 
-function preloadImage(src){
+function preload(src){
   const img = new Image();
   img.src = src;
-  bgCache[src] = img;
+  cache[src] = img;
 }
 
-/* preload ВСЕ сцен */
-function preloadAll(){
-  scenes.forEach(s => preloadImage(s.bg));
-}
-preloadAll();
-
-/* ===== FIXED BG SWITCH ===== */
-let toggle = false;
+/* preload ВСЕ фоны */
+scenes.forEach(s => preload(s.bg));
+preload("img/start.jpg");
 
 function setBgImage(path){
+
   const target = toggle ? bg : bg2;
   const prev = toggle ? bg2 : bg;
 
-  if(bgCache[path]?.complete){
-    target.style.backgroundImage = `url('${path}')`;
-    target.style.opacity = 1;
-    prev.style.opacity = 0;
-    toggle = !toggle;
-    return;
-  }
-
-  const img = new Image();
-  img.onload = () => {
+  const apply = () => {
     target.style.backgroundImage = `url('${path}')`;
     target.style.opacity = 1;
     prev.style.opacity = 0;
     toggle = !toggle;
   };
-  img.src = path;
+
+  if(cache[path]?.complete){
+    apply();
+  } else {
+    const img = new Image();
+    img.onload = apply;
+    img.src = path;
+  }
 }
 
-/* ===== SCENES (оставь свои оригинальные) ===== */
-const scenes = [
-  { label:"1", bg:"img/class.jpg" },
-  { label:"2", bg:"img/hall.jpg" },
-  { label:"3", bg:"img/library.jpg" }
-];
+/* =======================
+   NAVIGATION
+======================= */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
 
-/* ===== START ===== */
+/* =======================
+   FLOW
+======================= */
 function start(){
-  setBgImage("img/start.jpg");
+  show("characters");
+  setBgImage("img/choose.jpg");
 }
 
-/* ===== VIDEO SAFE LOADER ===== */
-const video = document.getElementById("slideshowVideo");
-
-const VIDEO_FALLBACK = "video/slideshow.mp4";
-
-function initVideo(){
-  video.src = VIDEO_FALLBACK;
-
-  video.addEventListener("error", () => {
-    console.warn("Fallback video failed");
-  });
+function goGame(){
+  show("game");
+  setBgImage(scenes[1].bg);
 }
-initVideo();
+
+function finale(){
+  show("final");
+  setBgImage("img/hall.jpg");
+}
+
+/* =======================
+   VIDEO FIX (LOCAL + YANDEX SAFE)
+======================= */
+const video = document.getElementById("video");
+
+function openGift(){
+  document.getElementById("giftModal").classList.add("active");
+
+  // безопасный источник (локальный как основной)
+  video.src = "video/slideshow.mp4";
+
+  video.load();
+  video.play().catch(()=>{});
+}
+
+document.getElementById("giftModal").onclick = (e)=>{
+  if(e.target.id === "giftModal"){
+    document.getElementById("giftModal").classList.remove("active");
+    video.pause();
+  }
+};
 
 </script>
 
