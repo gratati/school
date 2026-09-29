@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Лицей №9 — Система</title>
 
+<!-- ПРЕДЗАГРУЗКА КРИТИЧЕСКИХ ИЗОБРАЖЕНИЙ ДЛЯ МГНОВЕННОГО ОТОБРАЖЕНИЯ -->
+<link rel="preload" as="image" href="img/start.jpg">
+<link rel="preload" as="image" href="img/choose.jpg">
+<link rel="preload" as="image" href="img/final.jpg">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -473,7 +478,7 @@ canvas#particles{
     100% { transform: scale(1.06); box-shadow: 0 0 30px rgba(242,175,63,0.9); }
   }
 
-  /* МОДАЛЬНОЕ ОКНО И КАСТОМНЫЙ ПЛЕЕР С РЕГУЛИРОВКОЙ И FULLSCREEN */
+  /* МОДАЛЬНОЕ ОКНО И КАСТОМНЫЙ ПЛЕЕР */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -519,7 +524,6 @@ canvas#particles{
     color: var(--gold);
   }
 
-  /* СТИЛИ ПЛЕЕРА */
   .custom-player {
     position: relative;
     width: 100%;
@@ -531,7 +535,6 @@ canvas#particles{
     box-shadow: 0 8px 24px rgba(0,0,0,0.6);
   }
   
-  /* Полноэкранный режим */
   .custom-player:fullscreen {
     border-radius: 0;
     border: none;
@@ -602,7 +605,6 @@ canvas#particles{
     border-color: transparent transparent transparent #101a15;
   }
 
-  /* ПАНЕЛЬ УПРАВЛЕНИЯ ПЛЕЕРА */
   .player-controls {
     position: relative;
     z-index: 10;
@@ -659,7 +661,6 @@ canvas#particles{
     font-variant-numeric: tabular-nums;
   }
 
-  /* БЛОК ГРОМКОСТИ С ПОЛЗУНКОМ */
   .volume-block {
     display: flex;
     align-items: center;
@@ -705,55 +706,74 @@ canvas#particles{
   }
   @keyframes fall{ to{ transform: translateY(110vh) rotate(540deg); opacity:0.9; } }
 
+  /* Стили для индикатора загрузки и фолбэка Яндекс.Диска */
+  .video-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    z-index: 20;
+    font-weight: 600;
+    font-size: 16px;
+    border-radius: 14px;
+  }
+  .yandex-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 18, 0.95);
+    color: var(--chalk);
+    z-index: 20;
+    padding: 24px;
+    text-align: center;
+    border-radius: 14px;
+  }
+  .yandex-fallback p {
+    margin-bottom: 20px;
+    font-size: 16px;
+    line-height: 1.5;
+    max-width: 400px;
+  }
+  .yandex-fallback .fallback-hint {
+    font-size: 14px;
+    opacity: 0.7;
+    display: block;
+    margin-top: 8px;
+  }
+  .yandex-fallback a {
+    display: inline-block;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #ffc862, var(--gold));
+    color: #1c1000;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 6px 20px rgba(242,175,63,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .yandex-fallback a:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(242,175,63,0.6);
+  }
+
   @media (max-width: 600px) {
-    .stage {
-      padding: 70px 16px 30px;
-    }
-    #soundBtn {
-      top: 12px;
-      right: 12px;
-      padding: 8px 14px;
-      font-size: 12px;
-    }
-    .characters {
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-    .char {
-      width: 100%;
-      max-width: 100%;
-      display: flex;
-      align-items: center;
-      text-align: left;
-      padding: 12px 16px;
-      gap: 16px;
-    }
-    .char .avatar {
-      margin: 0;
-      width: 60px;
-      height: 60px;
-      flex-shrink: 0;
-    }
-    .char-info {
-      flex-grow: 1;
-    }
-    button {
-      width: 100%;
-      max-width: 320px;
-      font-size: 16px;
-      padding: 14px 20px;
-    }
-    .certificate {
-      padding: 28px 18px 22px;
-    }
-    .final-card {
-      min-height: 480px;
-      padding: 20px 14px;
-    }
-    .volume-slider {
-      width: 45px;
-    }
+    .stage { padding: 70px 16px 30px; }
+    #soundBtn { top: 12px; right: 12px; padding: 8px 14px; font-size: 12px; }
+    .characters { flex-direction: column; align-items: center; gap: 12px; }
+    .char { width: 100%; max-width: 100%; display: flex; align-items: center; text-align: left; padding: 12px 16px; gap: 16px; }
+    .char .avatar { margin: 0; width: 60px; height: 60px; flex-shrink: 0; }
+    .char-info { flex-grow: 1; }
+    button { width: 100%; max-width: 320px; font-size: 16px; padding: 14px 20px; }
+    .certificate { padding: 28px 18px 22px; }
+    .final-card { min-height: 480px; padding: 20px 14px; }
+    .volume-slider { width: 45px; }
   }
 </style>
 </head>
@@ -864,7 +884,7 @@ canvas#particles{
   </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО С ФИРМЕННЫМ ПЛЕЕРОМ (FULLSCREEN + ГРОМКОСТЬ) -->
+<!-- МОДАЛЬНОЕ ОКНО С ФИРМЕННЫМ ПЛЕЕРОМ -->
 <div id="giftModal" class="modal-overlay">
   <div class="modal-container">
     <button class="modal-close" onclick="closeGift()">&times;</button>
@@ -888,13 +908,11 @@ canvas#particles{
         
         <span class="player-time" id="timeDisplay">0:00 / 0:00</span>
         
-        <!-- Блок управления звуком -->
         <div class="volume-block">
           <button class="player-btn" id="muteBtn" onclick="toggleMute()" aria-label="Звук">🔊</button>
           <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="1" oninput="changeVolume(this.value)">
         </div>
 
-        <!-- Кнопка Полноэкранного режима -->
         <button class="player-btn" id="fsBtn" onclick="toggleFullscreen()" aria-label="Полный экран">⛶</button>
       </div>
     </div>
@@ -1019,6 +1037,32 @@ const scenes = [
     correct: [1, 2]
   }
 ];
+
+// ПРЕДЗАГРУЗКА ВСЕХ ИЗОБРАЖЕНИЙ И РЕСУРСОВ ДЛЯ МГНОВЕННОЙ РАБОТЫ
+const assetsToPreload = [
+  "img/start.jpg", "img/choose.jpg", "img/class.jpg", "img/hall.jpg",
+  "img/library.jpg", "img/tech.jpg", "img/hall2.jpg", "img/final.jpg",
+  "img/teacher1.png", "img/teacher2.png", "img/teacher3.png",
+  "video/slideshow.mp4"
+];
+
+function preloadAssets() {
+  assetsToPreload.forEach(src => {
+    if (src.endsWith('.mp4')) {
+      const vid = document.createElement("video");
+      vid.preload = "auto";
+      vid.src = src;
+    } else {
+      const img = new Image();
+      img.src = src;
+    }
+  });
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", preloadAssets);
+} else {
+  preloadAssets();
+}
 
 function toggleSound(){
   soundEnabled = !soundEnabled;
@@ -1233,7 +1277,7 @@ function finale(){
   setTimeout(type, 3000);
 }
 
-/* ЛОГИКА ОБНОВЛЕННОГО КАСТОМНОГО ПЛЕЕРА */
+/* ЛОГИКА КАСТОМНОГО ПЛЕЕРА С НАДЕЖНОЙ ЗАГРУЗКОЙ ЯНДЕКС.ДИСКА */
 const video = document.getElementById("slideshowVideo");
 const playBtn = document.getElementById("playBtn");
 const overlayBtn = document.getElementById("overlayBtn");
@@ -1244,7 +1288,6 @@ const volumeSlider = document.getElementById("volumeSlider");
 const customPlayer = document.getElementById("customPlayer");
 let lastVolume = 1;
 
-// --- Загрузка видео с Яндекс.Диска по публичной ссылке ---
 const YANDEX_DISK_PUBLIC_URL = "https://disk.yandex.ru/i/_DrfY_plQQRcCg";
 let yandexVideoResolved = false;
 let yandexVideoLoading = false;
@@ -1252,35 +1295,81 @@ let yandexVideoLoading = false;
 async function resolveYandexDiskVideo(){
   if(yandexVideoResolved || yandexVideoLoading) return;
   yandexVideoLoading = true;
+  
+  const loadingIndicator = document.createElement("div");
+  loadingIndicator.className = "video-loading";
+  loadingIndicator.innerHTML = "⏳ Загрузка видео с Яндекс.Диска...";
+  customPlayer.appendChild(loadingIndicator);
+
   try{
     const apiUrl = "https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key="
       + encodeURIComponent(YANDEX_DISK_PUBLIC_URL);
-    const res = await fetch(apiUrl);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 сек таймаут
+    
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
     if(!res.ok) throw new Error("Yandex API HTTP " + res.status);
     const data = await res.json();
+    
     if(data && data.href){
-      const wasPlaying = !video.paused;
-      const currentPos = video.currentTime || 0;
+      video.crossOrigin = "anonymous";
       video.src = data.href;
       video.load();
-      if(currentPos > 0){
-        video.addEventListener("loadedmetadata", function onMeta(){
-          video.currentTime = currentPos;
-          video.removeEventListener("loadedmetadata", onMeta);
-        });
-      }
-      if(wasPlaying){
-        video.play().catch(()=>{});
-      }
-      yandexVideoResolved = true;
+      
+      let loaded = false;
+      const onLoaded = () => {
+        loaded = true;
+        loadingIndicator.remove();
+        yandexVideoResolved = true;
+      };
+      
+      video.addEventListener("loadeddata", onLoaded, { once: true });
+      video.addEventListener("canplay", onLoaded, { once: true });
+      
+      video.addEventListener("error", () => {
+        if(!loaded) {
+          loadingIndicator.remove();
+          showYandexFallback();
+        }
+      }, { once: true });
+      
+      // Страховочный таймаут на саму загрузку медиа
+      setTimeout(() => {
+        if(!loaded && yandexVideoLoading) {
+          loadingIndicator.remove();
+          showYandexFallback();
+        }
+      }, 15000);
+      
     } else {
       throw new Error("Нет поля href в ответе Яндекс.Диска");
     }
-  }catch(err){
-    console.warn("Не удалось получить видео с Яндекс.Диска, используется локальный файл:", err);
-  }finally{
+  } catch(err){
+    console.warn("Не удалось получить видео через API:", err);
+    loadingIndicator.remove();
+    showYandexFallback();
+  } finally {
     yandexVideoLoading = false;
   }
+}
+
+function showYandexFallback() {
+  const fallback = document.createElement("div");
+  fallback.className = "yandex-fallback";
+  fallback.innerHTML = `
+    <p>
+      Не удалось загрузить видео напрямую.<br>
+      <span class="fallback-hint">(Возможно, блокировщик рекламы или настройки браузера ограничивают прямые ссылки)</span>
+    </p>
+    <a href="${YANDEX_DISK_PUBLIC_URL}" target="_blank" rel="noopener">
+      ▶ Открыть видео на Яндекс.Диске
+    </a>
+    <p class="fallback-hint" style="margin-top:16px;">или обновите страницу и попробуйте снова</p>
+  `;
+  customPlayer.appendChild(fallback);
 }
 
 function openGift(){
@@ -1359,7 +1448,6 @@ function seekVideo(e){
   }
 }
 
-/* УПРАВЛЕНИЕ ГРОМКОСТЬЮ */
 function changeVolume(val){
   video.volume = val;
   video.muted = (val == 0);
@@ -1390,14 +1478,13 @@ function updateMuteIcon(){
   }
 }
 
-/* ПОЛНОЭКРАННЫЙ РЕЖИМ */
 function toggleFullscreen(){
   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
     if (customPlayer.requestFullscreen) {
       customPlayer.requestFullscreen();
     } else if (customPlayer.webkitRequestFullscreen) {
       customPlayer.webkitRequestFullscreen();
-    } else if (video.webkitEnterFullscreen) { // Safari iOS fallback
+    } else if (video.webkitEnterFullscreen) {
       video.webkitEnterFullscreen();
     }
   } else {
