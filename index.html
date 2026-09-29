@@ -5,239 +5,232 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Лицей №9 — Система</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-:root{
-  --board-dark:#101a15;
-  --chalk:#fff;
-  --gold:#f2af3f;
-}
-
-/* базовый стиль */
+/* ====== BASE ====== */
 html,body{
   margin:0;
   padding:0;
-  min-height:100%;
-  font-family:Manrope,sans-serif;
-  background:var(--board-dark);
-  color:var(--chalk);
+  width:100%;
+  height:100%;
+  font-family:'Manrope',sans-serif;
+  background:#101a15;
+  color:#fff;
   overflow-x:hidden;
 }
 
-/* =======================
-   FIX: BACKGROUND SYSTEM
-======================= */
-#bg, #bg2{
+/* ====== BACKGROUNDS FIX (IMPORTANT) ====== */
+#bg,#bg2{
   position:fixed;
   inset:0;
+  width:100%;
+  height:100%;
   background-size:cover;
   background-position:center;
-  transform:translateZ(0);
+  transition: opacity .6s ease;
 }
 
-#bg{ z-index:1; }
-#bg2{
-  z-index:2;
-  opacity:0;
-  transition:opacity .6s ease;
+#bg{z-index:1; opacity:1;}
+#bg2{z-index:2; opacity:0;}
+
+#overlay{
+  position:fixed;
+  inset:0;
+  z-index:3;
+  background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.7));
 }
 
-/* UI layers */
-#bgAccent{position:fixed;inset:0;z-index:3;opacity:.3}
-#schoolFX{position:fixed;inset:0;z-index:4;pointer-events:none}
+/* ====== SCREENS ====== */
+.screen{display:none;position:relative;z-index:10;min-height:100vh;}
+.screen.active{display:flex;align-items:center;justify-content:center;flex-direction:column;}
 
-/* screens */
-.screen{display:none;position:relative;z-index:10}
-.active{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
-
-/* buttons */
 button{
   padding:14px 24px;
   border-radius:999px;
   border:none;
+  font-weight:700;
   cursor:pointer;
 }
 
-/* =======================
-   FIXED VIDEO MODAL
-======================= */
-.modal-overlay{
+/* ====== FINAL ====== */
+.final-card{
+  position:relative;
+  width:90%;
+  max-width:700px;
+  min-height:400px;
+  background:rgba(0,0,0,.5);
+  border-radius:20px;
+  overflow:hidden;
+}
+.final-card img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.final-content{
+  position:relative;
+  z-index:2;
+  padding:20px;
+}
+
+/* ====== VIDEO MODAL ====== */
+.modal{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.9);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:200;
+  z-index:999;
 }
-.modal-overlay.active{display:flex}
+.modal.active{display:flex;}
 
-.custom-player{
-  width:90%;
-  max-width:900px;
-  background:#000;
-  border-radius:12px;
-  overflow:hidden;
-}
-
-video{
-  width:100%;
-  display:block;
-}
-
-/* controls simplified */
-.player-controls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  padding:10px;
-  background:#111;
-  color:#fff;
-}
-
+video{width:90%;max-width:900px;}
 </style>
 </head>
 
 <body>
 
-<!-- BACKGROUNDS -->
 <div id="bg"></div>
-
-<!-- UI -->
-<div id="bgAccent"></div>
-<div id="schoolFX"></div>
+<div id="bg2"></div>
+<div id="overlay"></div>
 
 <!-- SCREENS -->
 <div id="start" class="screen active">
+  <h1>Система Лицея №9</h1>
   <button onclick="start()">Войти</button>
 </div>
 
-<div id="characters" class="screen">
-  <button onclick="goGame()">Дальше</button>
-</div>
-
 <div id="game" class="screen">
-  <h2>Игра</h2>
+  <h2 id="q"></h2>
+  <div id="answers"></div>
 </div>
 
 <div id="result" class="screen">
-  <button onclick="finale()">Финал</button>
+  <h2 id="resTitle"></h2>
+  <p id="resText"></p>
+  <button onclick="openFinal()">Открыть сообщение</button>
 </div>
 
 <div id="final" class="screen">
-  <button onclick="openGift()">Видео</button>
+  <div class="final-card">
+    <img src="img/final.jpg">
+    <div class="final-content">
+      <h2>Спасибо</h2>
+      <button onclick="openVideo()">Видео</button>
+    </div>
+  </div>
 </div>
 
-<!-- MODAL -->
-<div id="giftModal" class="modal-overlay">
-  <div class="custom-player">
-    <video id="video" controls></video>
-  </div>
+<!-- VIDEO -->
+<div id="modal" class="modal">
+  <video id="video" controls>
+    <source src="video/slideshow.mp4" type="video/mp4">
+  </video>
 </div>
 
 <script>
 
-/* =======================
-   SCENES (твой массив сохраняется)
-======================= */
-const scenes = [
-  { bg:"img/start.jpg" },
-  { bg:"img/class.jpg" },
-  { bg:"img/hall.jpg" },
-  { bg:"img/library.jpg" }
-];
-
-/* =======================
-   BACKGROUND ENGINE FIX
-======================= */
+/* ====== BG ENGINE FIX ====== */
 const bg = document.getElementById("bg");
-const bg2 = document.createElement("div");
-bg2.id = "bg2";
-document.body.appendChild(bg2);
-
+const bg2 = document.getElementById("bg2");
 let toggle = false;
+
 const cache = {};
 
 function preload(src){
-  const img = new Image();
-  img.src = src;
-  cache[src] = img;
+  const i = new Image();
+  i.src = src;
+  cache[src] = true;
 }
 
-/* preload ВСЕ фоны */
-scenes.forEach(s => preload(s.bg));
-preload("img/start.jpg");
+/* preload all */
+["img/start.jpg","img/choose.jpg","img/class.jpg","img/hall.jpg","img/library.jpg","img/tech.jpg","img/hall2.jpg","img/final.jpg"]
+.forEach(preload);
 
-function setBgImage(path){
+function setBg(src){
+  const active = toggle ? bg2 : bg;
+  const prev = toggle ? bg : bg2;
 
-  const target = toggle ? bg : bg2;
-  const prev = toggle ? bg2 : bg;
-
-  const apply = () => {
-    target.style.backgroundImage = `url('${path}')`;
-    target.style.opacity = 1;
+  const img = new Image();
+  img.onload = () => {
+    active.style.backgroundImage = `url('${src}')`;
+    active.style.opacity = 1;
     prev.style.opacity = 0;
     toggle = !toggle;
   };
-
-  if(cache[path]?.complete){
-    apply();
-  } else {
-    const img = new Image();
-    img.onload = apply;
-    img.src = path;
-  }
+  img.src = src;
 }
 
-/* =======================
-   NAVIGATION
-======================= */
+/* ====== SCENES (упрощённо сохранены) ====== */
+const scenes = [
+  {q:"Что сложнее всего объяснить?",bg:"img/class.jpg",a:["Тему","Домашнее","Зачем это всё"],c:2},
+  {q:"Самый опасный звук?",bg:"img/hall.jpg",a:["Звонок","Тишина","Можно выйти"],c:1},
+  {q:"Что ищут ученики?",bg:"img/library.jpg",a:["Знания","Ответы","Wi-Fi"],c:0},
+  {q:"Навык будущего?",bg:"img/tech.jpg",a:["Запоминать","Искать","Угадывать"],c:1},
+  {q:"Учитель — это?",bg:"img/hall2.jpg",a:["Профессия","Состояние","Суперспособность"],c:[1,2]}
+];
+
+let step=0;
+let score=0;
+
+function start(){
+  show("game");
+  render();
+}
+
+function render(){
+  const s = scenes[step];
+  setBg(s.bg);
+
+  document.getElementById("q").textContent = s.q;
+
+  const box = document.getElementById("answers");
+  box.innerHTML="";
+
+  s.a.forEach((t,i)=>{
+    const b=document.createElement("button");
+    b.textContent=t;
+    b.onclick=()=>{
+      if(s.c.includes(i)) score++;
+      next();
+    };
+    box.appendChild(b);
+  });
+}
+
+function next(){
+  step++;
+  if(step<scenes.length) render();
+  else result();
+}
+
+function result(){
+  show("result");
+  document.getElementById("resTitle").textContent =
+    score>=3 ? "Легенда" : "Настоящий учитель";
+
+  document.getElementById("resText").textContent =
+    "Спасибо за участие";
+}
+
+function openFinal(){
+  show("final");
+  setBg("img/final.jpg");
+}
+
+function openVideo(){
+  document.getElementById("modal").classList.add("active");
+}
+
+/* ====== NAV ====== */
 function show(id){
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
-
-/* =======================
-   FLOW
-======================= */
-function start(){
-  show("characters");
-  setBgImage("img/choose.jpg");
-}
-
-function goGame(){
-  show("game");
-  setBgImage(scenes[1].bg);
-}
-
-function finale(){
-  show("final");
-  setBgImage("img/hall.jpg");
-}
-
-/* =======================
-   VIDEO FIX (LOCAL + YANDEX SAFE)
-======================= */
-const video = document.getElementById("video");
-
-function openGift(){
-  document.getElementById("giftModal").classList.add("active");
-
-  // безопасный источник (локальный как основной)
-  video.src = "video/slideshow.mp4";
-
-  video.load();
-  video.play().catch(()=>{});
-}
-
-document.getElementById("giftModal").onclick = (e)=>{
-  if(e.target.id === "giftModal"){
-    document.getElementById("giftModal").classList.remove("active");
-    video.pause();
-  }
-};
 
 </script>
 
