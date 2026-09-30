@@ -706,19 +706,45 @@ canvas#particles{
   }
   @keyframes fall{ to{ transform: translateY(110vh) rotate(540deg); opacity:0.9; } }
 
-  /* Индикатор загрузки и фолбэк для видео */
+  /* Индикатор загрузки с прогрессом */
   .video-loading {
     position: absolute;
     inset: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0,0,0,0.85);
+    background: rgba(0,0,0,0.9);
     color: #fff;
     z-index: 20;
     font-weight: 600;
     font-size: 16px;
     border-radius: 14px;
+    gap: 16px;
+  }
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(242,175,63,0.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loading-progress {
+    width: 200px;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .loading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--gold);
+    transition: width 0.3s ease;
   }
   .yandex-fallback {
     position: absolute;
@@ -1042,20 +1068,13 @@ const scenes = [
 const assetsToPreload = [
   "img/start.jpg", "img/choose.jpg", "img/class.jpg", "img/hall.jpg",
   "img/library.jpg", "img/tech.jpg", "img/hall2.jpg", "img/final.jpg",
-  "img/teacher1.png", "img/teacher2.png", "img/teacher3.png",
-  "video/slideshow.mp4"
+  "img/teacher1.png", "img/teacher2.png", "img/teacher3.png"
 ];
 
 function preloadAssets() {
   assetsToPreload.forEach(src => {
-    if (src.endsWith('.mp4')) {
-      const vid = document.createElement("video");
-      vid.preload = "auto";
-      vid.src = src;
-    } else {
-      const img = new Image();
-      img.src = src;
-    }
+    const img = new Image();
+    img.src = src;
   });
 }
 if (document.readyState === "loading") {
@@ -1082,7 +1101,6 @@ function toggleSound(){
   }
 }
 
-// ИСПРАВЛЕНО: Фон применяется сразу, без ожидания полной загрузки в JS
 function setBgImage(path){
   bg.style.backgroundImage = `url('${path}')`;
 }
@@ -1276,7 +1294,7 @@ function finale(){
   setTimeout(type, 3000);
 }
 
-/* ЛОГИКА КАСТОМНОГО ПЛЕЕРА С ИСПРАВЛЕННОЙ ЗАГРУЗКОЙ ЯНДЕКС.ДИСКА */
+/* ЛОГИКА ЗАГРУЗКИ ВИДЕО: ЛОКАЛЬНО → ЯНДЕКС.ДИСК → ФОЛБЭК */
 const video = document.getElementById("slideshowVideo");
 const playBtn = document.getElementById("playBtn");
 const overlayBtn = document.getElementById("overlayBtn");
@@ -1287,25 +1305,69 @@ const volumeSlider = document.getElementById("volumeSlider");
 const customPlayer = document.getElementById("customPlayer");
 let lastVolume = 1;
 
+const LOCAL_VIDEO_URL = "video/slideshow.mp4";
 const YANDEX_DISK_PUBLIC_URL = "https://disk.yandex.ru/i/_DrfY_plQQRcCg";
-let yandexVideoResolved = false;
-let yandexVideoLoading = false;
+let videoLoading = false;
 
-async function resolveYandexDiskVideo(){
-  if(yandexVideoResolved || yandexVideoLoading) return;
-  yandexVideoLoading = true;
+async function loadVideoWithFallback() {
+  if(videoLoading) return;
+  videoLoading = true;
   
   const loadingIndicator = document.createElement("div");
   loadingIndicator.className = "video-loading";
-  loadingIndicator.innerHTML = "⏳ Загрузка видео...";
+  loadingIndicator.innerHTML = `
+    <div class="loading-spinner"></div>
+    <div>Загрузка видео...</div>
+    <div class="loading-progress">
+      <div class="loading-progress-bar" id="loadingBar"></div>
+    </div>
+    <div id="loadingStatus" style="font-size:14px;opacity:0.7;">Проверка локального файла</div>
+  `;
   customPlayer.appendChild(loadingIndicator);
+  
+  const loadingBar = document.getElementById("loadingBar");
+  const loadingStatus = document.getElementById("loadingStatus");
+  
+  // Попытка 1: Локальный файл
+  try {
+    loadingStatus.textContent = "Загрузка из папки video/...";
+    
+    const response = await fetch(LOCAL_VIDEO_URL, { method: 'HEAD' });
+    if(response.ok) {
+      loadingStatus.textContent = "Воспроизведение локального видео...";
+      video.src = LOCAL_VIDEO_URL;
+      video.load();
+      
+      video.onloadeddata = () => {
+        loadingIndicator.remove();
+        videoLoading = false;
+      };
+      
+      video.onerror = () => {
+        console.warn("Локальное видео не загрузилось, пробуем Яндекс.Диск");
+        loadFromYandexDisk(loadingIndicator, loadingBar, loadingStatus);
+      };
+      
+      return;
+    }
+  } catch(e) {
+    console.warn("Локальный файл недоступен:", e);
+  }
+  
+  // Попытка 2: Яндекс.Диск
+  loadFromYandexDisk(loadingIndicator, loadingBar, loadingStatus);
+}
 
-  try{
+async function loadFromYandexDisk(loadingIndicator, loadingBar, loadingStatus) {
+  loadingStatus.textContent = "Загрузка с Яндекс.Диска...";
+  loadingBar.style.width = "30%";
+  
+  try {
     const apiUrl = "https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key="
       + encodeURIComponent(YANDEX_DISK_PUBLIC_URL);
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     
     const res = await fetch(apiUrl, { signal: controller.signal });
     clearTimeout(timeoutId);
@@ -1313,48 +1375,44 @@ async function resolveYandexDiskVideo(){
     if(!res.ok) throw new Error("Yandex API HTTP " + res.status);
     const data = await res.json();
     
-    if(data && data.href){
-      // ИСПРАВЛЕНО: убран video.crossOrigin = "anonymous", так как Яндекс.Диск 
-      // не отдаёт CORS-заголовки для прямых ссылок, что приводило к молчаливой блокировке видео браузером.
+    if(data && data.href) {
+      loadingBar.style.width = "60%";
+      loadingStatus.textContent = "Подготовка видео с Яндекс.Диска...";
+      
       video.src = data.href;
       video.load();
       
-      let loaded = false;
-      const onLoaded = () => {
-        if(loaded) return;
-        loaded = true;
-        loadingIndicator.remove();
-        yandexVideoResolved = true;
+      video.onloadeddata = () => {
+        loadingBar.style.width = "100%";
+        setTimeout(() => {
+          loadingIndicator.remove();
+          videoLoading = false;
+        }, 300);
       };
       
-      video.addEventListener("loadeddata", onLoaded, { once: true });
-      video.addEventListener("canplay", onLoaded, { once: true });
+      video.onerror = () => {
+        console.error("Видео с Яндекс.Диска не загрузилось");
+        loadingIndicator.remove();
+        showYandexFallback();
+        videoLoading = false;
+      };
       
-      // Страховочный таймаут: если видео не загрузилось за 15 секунд, показываем фолбэк
       setTimeout(() => {
-        if(!loaded) {
+        if(videoLoading) {
           loadingIndicator.remove();
           showYandexFallback();
+          videoLoading = false;
         }
-      }, 15000);
-      
-      video.addEventListener("error", (e) => {
-        console.error("Video load error:", e);
-        if(!loaded) {
-          loadingIndicator.remove();
-          showYandexFallback();
-        }
-      }, { once: true });
+      }, 20000);
       
     } else {
-      throw new Error("Нет поля href в ответе Яндекс.Диска");
+      throw new Error("Нет поля href");
     }
-  } catch(err){
-    console.warn("Не удалось получить видео через API:", err);
+  } catch(err) {
+    console.warn("Не удалось загрузить с Яндекс.Диска:", err);
     loadingIndicator.remove();
     showYandexFallback();
-  } finally {
-    yandexVideoLoading = false;
+    videoLoading = false;
   }
 }
 
@@ -1364,7 +1422,7 @@ function showYandexFallback() {
   fallback.innerHTML = `
     <p>
       Не удалось загрузить видео напрямую.<br>
-      <span class="fallback-hint">(Браузер или блокировщик рекламы ограничил прямую ссылку)</span>
+      <span class="fallback-hint">(Возможно, блокировщик рекламы ограничил загрузку)</span>
     </p>
     <a href="${YANDEX_DISK_PUBLIC_URL}" target="_blank" rel="noopener">
       ▶ Открыть видео на Яндекс.Диске
@@ -1385,7 +1443,7 @@ function openGift(){
   }
   updatePlayState(false);
 
-  resolveYandexDiskVideo();
+  loadVideoWithFallback();
 }
 
 function closeGift(){
@@ -1541,7 +1599,6 @@ function draw(){
 }
 draw();
 
-// Инициализация начального фона
 setBgImage(backgrounds.start.src);
 if(!prefersReduced) startFloaters(["📖", "✏️", "🍎"]);
 </script>
